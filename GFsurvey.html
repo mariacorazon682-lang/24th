@@ -118,6 +118,12 @@ button:hover { background: #ff4f8c; }
     color: #888;
     display: none;
 }
+
+#moreSurprises {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #888;
+}
 </style>
 </head>
 <body>
@@ -141,6 +147,7 @@ button:hover { background: #ff4f8c; }
         <button id="closeNoBtn">Close</button>
         <button id="finalCloseBtn" style="display:none;">Close</button>
         <div id="clickAnywhere">Click anywhere</div>
+        <div id="moreSurprises" style="display:none;">I have more surprises later 😘🔥</div>
     </div>
     <div id="confetti"></div>
 </div>
@@ -153,7 +160,7 @@ button:hover { background: #ff4f8c; }
 </div>
 
 <audio id="bgMusic" loop>
-    <source src="https://open.spotify.com/track/76CdvUtrmMwkSo0hBoEEum?si=01156b9acf8c4396">
+    <source src="c:\Users\User\Downloads\Careless Whisper - Saxophone cover by Manu LÃ³pez.mp3">
 </audio>
 
 <script>
@@ -169,6 +176,7 @@ const swirlImage = document.getElementById('swirlImage');
 const noLabel = document.getElementById('noLabel');
 const noImage = document.getElementById('noImage');
 const clickAnywhere = document.getElementById('clickAnywhere');
+const moreSurprises = document.getElementById('moreSurprises');
 const bgMusic = document.getElementById('bgMusic');
 
 let noCount = 0;
@@ -198,7 +206,7 @@ function makeHearts(count, icon="💖"){
     }
 }
 
-function showMessageModal(messageText, subText, hearts=10, type="normal", final=false, image=null, showClickAnywhere=false){
+function showMessageModal(messageText, subText, hearts=10, type="normal", final=false, image=null, showClickAnywhere=false, showMoreSurprises=false){
     msg.textContent = messageText;
     sub.textContent = subText;
     swirlImage.style.opacity = 0;
@@ -215,6 +223,7 @@ function showMessageModal(messageText, subText, hearts=10, type="normal", final=
     }
 
     clickAnywhere.style.display = showClickAnywhere ? "block" : "none";
+    moreSurprises.style.display = showMoreSurprises ? "block" : "none";
 
     const icon = type === "broken" ? "💔" : "💖";
     makeHearts(hearts, icon);
@@ -285,7 +294,7 @@ I love you today, tomorrow, and always. ❤️✨`,
     );
 });
 
-// Click anywhere for swirl animation
+// Click anywhere triggers swirl animation and second heartfelt message with surprise sign
 overlayMessage.addEventListener('click', (e)=>{
     if(e.target === overlayMessage && document.getElementById('yes').checked){
         overlayMessage.classList.remove('show');
@@ -307,7 +316,10 @@ overlayMessage.addEventListener('click', (e)=>{
                 "Hope this made you smile! Always remember I love you every day MWAAAA😘",
                 30,
                 "yes",
-                true
+                true,
+                null,
+                false,
+                true // Show "I have more surprises later HEHEHE 😘🔥"
             );
         }, 2000);
     }
