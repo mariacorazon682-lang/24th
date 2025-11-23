@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Girlfriend Survey</title>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+body {
+    font-family: Arial, sans-serif;
+    background: url(https://www.breakflip.com/uploads/686fa265a5465-vignette-umamusume-pretty-derby-meilleur-build-semaine-speciale-special-week.jpg) no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow-x: hidden;
+}
+
+.survey-box {
+    background: rgba(255,255,255,0.5);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(5px);
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    background: #ff79a8;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+}
+button:hover { background: #ff4f8c; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.3s ease;
+    flex-direction: column;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 80%;
+    max-width: 700px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+#closeNoBtn, #finalCloseBtn {
+    margin-top: 15px;
+    background: #ff79a8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#noImage {
+    width: 50%;
+    margin-top: 15px;
+    border-radius: 10px;
+}
+
+.heart {
+    position: absolute;
+    animation: floatUp 5s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes floatUp {
+    0% { transform: translateY(50px) scale(0.6); opacity: 1; }
+    100% { transform: translateY(-250px) scale(1.4); opacity: 0; }
+}
+
+#swirlImage {
+    width: 100%;
+    max-width: 600px;
+    border-radius: 12px;
+    opacity: 0;
+    transform: rotate(0deg);
+    transition: opacity 2s ease, transform 2s ease;
+}
+
+/* Hide image modal close button */
+#overlayImage button { display: none; }
+
+#clickAnywhere {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #888;
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="survey-box">
+    <h1>Is this my girlfriend?</h1>
+    <div class="options">
+        <label><input type="radio" name="gf" value="yes" id="yes"> Yes</label>
+        <br><br>
+        <label id="noLabel" for="no"><input type="radio" name="gf" value="no" id="no"> No</label>
+    </div>
+    <button id="revealBtn">Reveal</button>
+</div>
+
+<!-- Modal for messages and "No" pictures -->
+<div id="overlayMessage" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box" id="messageBox">
+        <h2 id="message"></h2>
+        <p id="sub" style="white-space: pre-wrap; text-align: left;"></p>
+        <img id="noImage" src="" style="display:none;">
+        <button id="closeNoBtn">Close</button>
+        <button id="finalCloseBtn" style="display:none;">Close</button>
+        <div id="clickAnywhere">Click anywhere</div>
+    </div>
+    <div id="confetti"></div>
+</div>
+
+<!-- Second modal: Swirling image -->
+<div id="overlayImage" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box">
+        <img id="swirlImage" src="https://www.meme-arsenal.com/memes/cd1262a9aec8d4aa5c57023f8a993ed0.jpg" alt="Sweet Meme">
+    </div>
+</div>
+
+<audio id="bgMusic" loop>
+    <source src="https://open.spotify.com/track/76CdvUtrmMwkSo0hBoEEum?si=01156b9acf8c4396">
+</audio>
+
+<script>
+const revealBtn = document.getElementById('revealBtn');
+const overlayMessage = document.getElementById('overlayMessage');
+const overlayImage = document.getElementById('overlayImage');
+const closeNoBtn = document.getElementById('closeNoBtn');
+const finalCloseBtn = document.getElementById('finalCloseBtn');
+const msg = document.getElementById('message');
+const sub = document.getElementById('sub');
+const confetti = document.getElementById('confetti');
+const swirlImage = document.getElementById('swirlImage');
+const noLabel = document.getElementById('noLabel');
+const noImage = document.getElementById('noImage');
+const clickAnywhere = document.getElementById('clickAnywhere');
+const bgMusic = document.getElementById('bgMusic');
+
+let noCount = 0;
+let musicStarted = false;
+
+// Images for each No
+const noImages = [
+    "https://i.pinimg.com/736x/63/af/98/63af987a2cf528462ae90e36c72f6e96.jpg",
+    "https://imgflip.com/s/meme/Scared-Cat.jpg",
+    "https://i.pinimg.com/originals/7e/b3/d6/7eb3d61ecdd54dedb980078223184936.jpg?nii=t",
+    "https://dontgetserious.com/wp-content/uploads/2021/08/Sad-Cat-Memes-10.jpeg",
+    "https://media.tenor.com/UcGpyfdxbMwAAAAC/cat-hehe.gif"
+];
+
+function clearHearts(){ confetti.innerHTML = ''; }
+
+function makeHearts(count, icon="💖"){
+    clearHearts();
+    for(let i=0;i<count;i++){
+        const h = document.createElement('div');
+        h.className = 'heart';
+        h.textContent = icon;
+        h.style.left = Math.random()*100 + '%';
+        h.style.fontSize = (12 + Math.random()*36) + 'px';
+        h.style.animationDuration = (3 + Math.random()*3) + 's';
+        confetti.appendChild(h);
+    }
+}
+
+function showMessageModal(messageText, subText, hearts=10, type="normal", final=false, image=null, showClickAnywhere=false){
+    msg.textContent = messageText;
+    sub.textContent = subText;
+    swirlImage.style.opacity = 0;
+    swirlImage.style.transform = "rotate(0deg)";
+
+    closeNoBtn.style.display = type === "broken" ? "inline-block" : "none";
+    finalCloseBtn.style.display = final ? "inline-block" : "none";
+
+    if(image){
+        noImage.src = image;
+        noImage.style.display = "block";
+    } else {
+        noImage.style.display = "none";
+    }
+
+    clickAnywhere.style.display = showClickAnywhere ? "block" : "none";
+
+    const icon = type === "broken" ? "💔" : "💖";
+    makeHearts(hearts, icon);
+
+    overlayMessage.classList.add('show');
+    overlayMessage.setAttribute('aria-hidden','false');
+}
+
+revealBtn.addEventListener('click', ()=>{
+    const chosen = document.querySelector('input[name="gf"]:checked');
+    if(!chosen){
+        showMessageModal("Please pick an answer first!", "Tap Yes or No. it won't take long. HEHEHE", 6, "normal");
+        return;
+    }
+
+    if(chosen.value === 'no'){
+        noCount++;
+        if(noCount < 5){
+            showMessageModal(
+                "Are you sure?",
+                `You said no ${noCount} time(s)...`,
+                8,
+                "broken",
+                false,
+                noImages[noCount-1]
+            );
+        } else {
+            noLabel.remove();
+            document.getElementById('yes').checked = true;
+            showMessageModal(
+                "Okay, no more saying no!",
+                "You only have YES now MWEHEHEHE💕",
+                24,
+                "broken",
+                false,
+                noImages[4]
+            );
+        }
+        return;
+    }
+
+    // YES: start music immediately
+    if(!musicStarted){
+        bgMusic.volume = 1.0;
+        bgMusic.play().catch(err => console.log("Music blocked:", err));
+        musicStarted = true;
+    }
+
+    // Show first heartfelt message
+    showMessageModal(
+        "BEBE! HAPPY BIRTHDAY AND HAPPY 14th monthsary 💖😘",
+        `Happy Birthday, my love! 🎉💗
+And happy 14th monthsary to us!
+Another month, another memory, and another reason I'm grateful to have you in my life.
+You always make my days brighter, my heart lighter, and my world so much sweeter.
+
+I may be busy right now, but please don’t ever forget this.
+I love you every single day, in every moment, even the ones I can't always show.
+You’re always in my heart, always in my thoughts, and always the person I choose.
+
+Here’s to more memories, more laughters, and more beautiful moments together.
+I love you today, tomorrow, and always. ❤️✨`,
+        30,
+        "yes",
+        false,
+        null,
+        true
+    );
+});
+
+// Click anywhere for swirl animation
+overlayMessage.addEventListener('click', (e)=>{
+    if(e.target === overlayMessage && document.getElementById('yes').checked){
+        overlayMessage.classList.remove('show');
+        overlayMessage.setAttribute('aria-hidden','true');
+        overlayImage.classList.add('show');
+        overlayImage.setAttribute('aria-hidden','false');
+
+        swirlImage.style.opacity = 1;
+        swirlImage.style.transform = "rotate(360deg)";
+
+        setTimeout(()=>{
+            overlayImage.classList.remove('show');
+            overlayImage.setAttribute('aria-hidden','true');
+            swirlImage.style.opacity = 0;
+            swirlImage.style.transform = "rotate(0deg)";
+
+            showMessageModal(
+                "LOVE YOU FOREVER 💖💗",
+                "Hope this made you smile! Always remember I love you every day MWAAAA😘",
+                30,
+                "yes",
+                true
+            );
+        }, 2000);
+    }
+});
+
+closeNoBtn.addEventListener('click', ()=>{
+    overlayMessage.classList.remove('show');
+    overlayMessage.setAttribute('aria-hidden','true');
+    clearHearts();
+    noImage.style.display = "none";
+});
+
+finalCloseBtn.addEventListener('click', ()=>{
+    overlayMessage.classList.remove('show');
+    overlayMessage.setAttribute('aria-hidden','true');
+    clearHearts();
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+});
+</script>
+
+</body>
+</html>
